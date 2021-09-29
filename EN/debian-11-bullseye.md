@@ -14,7 +14,7 @@
 
 ### Preparation
 
-First we prepare the installed Ubuntu Server instance. First, we bring the system up to date before we start installing firewalld as the firewall management tool and vim as the editor. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
+First we prepare the installed Debian Server instance. First, we bring the system up to date before we start installing firewalld as the firewall management tool and vim as the editor. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
 
 ```bash
 sudo apt update && apt upgrade
@@ -28,7 +28,7 @@ sudo systemctl enable firewalld
 sudo systemctl start firewalld
 ```
 
-In the next step, we set up the necessary firewall policies. In our case, we access the Ubuntu server via SSH. Therefore, we will also open the ports necessary for ssh.
+In the next step, we set up the necessary firewall policies. In our case, we access the Debian server via SSH. Therefore, we will also open the ports necessary for ssh.
 
 ```bash
 sudo firewall-cmd --permanent --add-service=http
@@ -375,7 +375,7 @@ This establishes the database connection.
 
 :bulb: Since with the version 2.9.17 an extension module for the generation of statistics from created risk analyses was published, since then further adjustments are to be made to the local.php, if this function will be used. In this case, further information can be found at the following link: https://www.monarc.lu/documentation/stats-service/master/installation.html
 
-Since MONARC requires "nodejs 14" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
+Since MONARC requires "nodejs 14" and this version is currently not part of the Debian repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
 
 ```bash
 curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
