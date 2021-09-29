@@ -94,7 +94,7 @@ EXIT;
 
 This completes the installation of the database service and we can proceed with the Apache web server.
 
-### Installation Apache Webserver und PHP 7.4
+### Installation Apache Webserver and PHP 7.4
 
 First, we install the required Apache with the required PHP 7.4 packages. Since PHP 7.4 is not included by default in Centos, we obtain it from the REMI repository
 
@@ -167,7 +167,7 @@ Finally, we add our configuration folder to Apache's settings:
 sudo vim /etc/httpd/conf/httpd.conf
 ```
 
-In dieser Datei ergänzen wir am Ende die folgende Zeile
+In this file we add the following line at the end
 
 ```bash
 IncludeOptional sites-enabled/*.conf

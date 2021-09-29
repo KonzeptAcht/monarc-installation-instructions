@@ -1,9 +1,9 @@
 
-# Installation Anleitung Ubuntu 20.04
+# Installation Anleitung Centos 8
 
 ## Vorraussetzungen
 
-- Ubuntu 20.04 LTS server installation
+- Centos 8 server installation
 - Internet Zugang
 - Command line Zugriff (Putty/SSH/direct access)
 
@@ -14,11 +14,11 @@
 
 ### Preparation
 
-Zunächst bereiten wir die installierte Ubuntu Server Instanz vor. Zunächst bringen wir das System auf den aktuellsten Stand bevor wir mit der installation von firewalld als Firewall-Managementtool und vim als Editor beginnen. Diese sind unserer Meinung nach am einfachsten bedienbar. Sie können natürlich andere Tools einsetzen. Bitte beachten sie dann im folgenden, die entsprechenden Zeilen für sich anzupassen.
+Zunächst bereiten wir die installierte Centos Server-Instanz vor. Zuerst bringen wir das System auf den neuesten Stand, bevor wir mit der Installation und Konfiguration von firewalld als Firewall-Management-Tool und vim als Editor beginnen. Diese sind unserer Meinung nach am einfachsten zu benutzen. Sie können natürlich auch andere Tools verwenden. Bitte beachten Sie dann im Folgenden, die entsprechenden Zeilen für sich anzupassen.
 
 ```bash
-sudo apt update && apt upgrade
-sudo apt install firewalld vim
+sudo dnf update
+sudo dnf install firewalld vim epel-release
 ```
 
 Nach erfolgreicher Installation richten wir firewalld für den Autostart ein und starten den Dienst.
@@ -28,7 +28,7 @@ sudo systemctl enable firewalld
 sudo systemctl start firewalld
 ```
 
-Im nächsten Schritt richten wir die notwendigen Firewall-Richtlinien ein. In unserem Fall greifen wir auf den Ubuntu Server mittels SSH zu. Daher werden wir auch die hierfür notwendigen Ports freigeben.
+Im nächsten Schritt richten wir die erforderlichen Firewall-Richtlinien ein. In unserem Fall greifen wir über SSH auf den Centos-Server zu. Daher werden wir auch die dafür notwendigen Ports freigeben.
 
 ```bash
 sudo firewall-cmd --permanent --add-service=http
@@ -37,21 +37,21 @@ sudo firewall-cmd --permanent --add-service=ssh
 sudo firewall-cmd --reload
 ```
 
-Abschließend installieren wir einige Tools und Abhängigkeiten, für die spätere MONARC Installation.
+Schließlich installieren wir noch einige Tools und Abhängigkeiten für die spätere MONARC-Installation.
 
 ```bash
-sudo apt install zip unzip git gettext curl gsfonts
+sudo dnf install zip unzip git gettext curl tar gzip wget
 ```
 
-### Installation MariaDB database server
+### Installation MariaDB Datenbank server
 
-Wir beginnen mit der Installation des Datenbankservers und der Clientsoftware.
+Wir beginnen mit der Installation des Datenbankservers und der Client-Software.
 
 ```bash
-sudo apt install mariadb-server mariadb-client
+sudo dnf install mariadb-server mariadb
 ```
 
-Anschließend richten wir hier ebenfalls den Autostart ein und starten den Dienste initial.
+Anschließend richten wir auch hier den Autostart ein und starten zunächst die Dienste.
 
 ```bash
 sudo systemctl enable mariadb
@@ -64,7 +64,7 @@ Nach erfolgreichem Start des Dienstes können wir mit der Konfiguration beginnen
 sudo mysql_secure_installation
 ```
 
-Hier sind folgende Angaben zu machen:
+Die folgenden Informationen sollten hier angegeben werden:
 
 ```bash
 Enter current password for root (enter for none): [ENTER]
@@ -79,8 +79,7 @@ Disallow root login remotely? [Y/n] Y
 ...
 Remove test database and access to it? [Y/n] Y
 ```
-
-Nach erfolgreicher Installation bereiten wir die Datenbank auf die Installation von MONARC vor. Hierfür loggen wir uns zunächst mit der Anmeldedaten des „root“ Users am Datenbankdienst an und erstellen anschließend den MONARC Datenbankbenutzer und die Datenbanken.
+After successful installation, we prepare the database for MONARC installation. To do this, we first log in to the database service with the "root" user's credentials and then create the MONARC database user and databases.
 
 ```bash
 mysql -u root -p
@@ -97,27 +96,31 @@ Damit ist die Installation des Datenbankdienstes abgeschlossen und wir können m
 
 ### Installation Apache Webserver und PHP 7.4
 
-Zuerst installieren wir die erforderlichen Apache- und PHP 7.4-Pakete.
+Zunächst installieren wir den erforderlichen Apache Server mit den PHP 7.4-Paketen. Da PHP 7.4 in Centos nicht standardmäßig auf der aktuellsten Version enthalten ist, beziehen wir es aus dem REMI-Repository
 
 ```bash
-sudo apt install apache2 php php-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
+sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+sudo dnf module enable php:remi-7.4
+sudo dnf install httpd php php-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath}
 ```
 
-Um später Zugriff auf die MONARC Umgebung zu erhalten, bei Apache ein sogenannter „Virtual Host“ einzurichten. In der hier zur verfügung gestellten Konfiguration sind einige teile auskommentiert. Diese Fassung ermöglicht es unverschlüsselten Zugriff auf die installierte MONARC Instanz zu erhalten. Es ist jedoch sehr zu empfehlen, die Verbindung mittels SSL/TLS Zertifikat abzusichern. Hierfür ist die Konfigurationsdatei bereits vorbereitet.
+Um später auf die MONARC-Umgebung zugreifen zu können, muss bei Apache ein "Virtual Host" eingerichtet werden. In der hier bereitgestellten Konfiguration sind einige Teile auskommentiert. Diese Version ermöglicht einen unverschlüsselten Zugriff auf die installierte MONARC-Instanz. Es wird jedoch dringend empfohlen, die Verbindung mit einem SSL/TLS-Zertifikat abzusichern. Die Konfigurationsdatei ist für diesen Zweck bereits vorbereitet.
 
-Zur Erstellung eines „Virtual Host“ wechseln wir in das Apache Konfigurationsverzeichnis
+Um einen "Virtual Host" zu erstellen, wechseln wir in das Apache-Konfigurationsverzeichnis
 
 ```bash
-cd /etc/apache2/sites-available/
+sudo mkdir /etc/httpd/sites-available
+sudo mkdir /etc/httpd/sites-enabled
+cd /etc/httpd/sites-available/
 ```
 
-Hier legen wir nun eine neue Datei an und benennen sie entsprechend der Domain, unter der die Installation betrieben werden soll.
+Hier legen wir nun eine neue Datei an und benennen sie nach der Domäne, unter der die Installation laufen soll.
 
 ```bash
 vim monarc.domain.de.conf
 ```
 
-Hier fügen wir die folgende Konfiguration ein und speichern diese ab.
+Hier fügen wir die folgende Konfiguration ein und speichern sie.
 
 ```bash
 <VirtualHost *:80>
@@ -146,7 +149,7 @@ DocumentRoot "/var/lib/monarc/fo/public"
 # SSL configuration, you may want to take the easy route instead and use Lets Encrypt!
 #SSLEngine on
 #Include /etc/letsencrypt/options-ssl-apache.conf
-#SSLProtocol -all + TLSv1.3 +TLSv1.2 +TLSv1.1
+#SSLProtocol -all +TLSv1.3 +TLSv1.2 +TLSv1.1
 #SSLHonorCipherOrder on
 
 # Encoded slashes need to be allowed
@@ -158,82 +161,82 @@ AllowEncodedSlashes             NoDecode
 </VirtualHost>
 ```
 
-Abschließend aktivieren wir die benötigten Module:
+Schließlich fügen wir unseren Konfigurationsordner zu den Apache-Einstellungen hinzu:
 
 ```bash
-sudo a2dismod status
-sudo a2enmod ssl
-sudo a2enmod rewrite
-sudo a2enmod headers
+sudo vim /etc/httpd/conf/httpd.conf
 ```
 
-Um unsere Änderungen am Virtual Host zu aktivieren ist nun noch ein symbolischer Link anzulegen.
-
+In dieser Datei ergänzen wir am Ende die folgende Zeile
 
 ```bash
-cd /etc/apache2/sites-enabled/
+IncludeOptional sites-enabled/*.conf
+```
+
+Um unsere Änderungen am virtuellen Host zu aktivieren, müssen wir nun einen symbolischen Link erstellen.
+
+```bash
+cd /etc/httpd/sites-enabled/
 ln -s ../sites-available/monarc.domain.de.conf monarc.domain.de.conf
 ```
 
-Um zu Prüfen, ob unsere Konfiguration fehlerfrei ist, können wir nun noch einen Check durchführen.
+Um zu überprüfen, ob die Konfiguration richtig funktioniert, können Sie sie vorher auf Syntaxfehler überprüfen
 
 ```bash
 sudo apachectl -S
 ```
 
-In der Auflistung sollte unsere angelegte Datei aufgeführt sein. Zudem sollten keinerlei Fehler ausgegeben werden.
+Die von uns erstellte Datei sollte in der Ausgabe aufgeführt sein. Außerdem sollten keine Fehler gemeldet werden.
 
-Damit können wir den Autostart für Apache einrichten und den Dienst starten
+Damit können wir den Autostart für Apache einrichten und den Dienst starten.
 
 ```bash
-sudo systemctl enable apache2
-sudo systemctl start apache2
+sudo systemctl enable httpd
+sudo systemctl start httpd
 ```
 
 ### PHP settings
 
-Da MONARC zum aktuellen Zeitpunkt bei größeren Risikomanagementstrukturen noch Probleme mit den Standard Timeouts von PHP haben kann, sollten folgende Grenzwerte in der php.ini angepasst werden:
+Da MONARC bei größeren Risikomanagement-Strukturen derzeit noch Probleme mit den Standard-Timeouts von PHP haben kann, empfehlen wir, den folgenden Parameter in der php.ini anzupassen:
 
 ```bash
-vim /etc/php/7.4/apache2/php.ini
+sudo vim /etc/php.ini
 ```
 ```bash
 ...
-max_execution_time = 0
+max_execution_time = 0 #Achtung, diese Einstellung deaktiviert den Timeout für PHP, wenn andere Anwendungen auf dem Server verwendet werden, sollte geprüft werden, ob diese Einstellung verwendet werden kann.
 ...
-max_input_time = 0
+max_input_time = 0 #Achtung, diese Einstellung deaktiviert den Timeout für PHP, wenn andere Anwendungen auf dem Server verwendet werden, sollte geprüft werden, ob diese Einstellung verwendet werden kann.
 ...
 memory_limit = 2048M
 ...
 ```
-Um später bei möglichen Uplouds in die MONARC Umgebung keine Schwierigkeiten zu bekommen, stellen wir in der `/etc/php/7.4/apache2/php.ini` das Uploudlimit höher ein
+Um spätere Probleme mit möglichen Uploads in die MONARC-Umgebung zu vermeiden, setzen wir das Upload-Limit in `/etc/php.ini` höher
 
 ```bash
-sudo vim /etc/php/7.4/apache2/php.ini
+sudo vim /etc/php.ini
 ```
 ```bash
 upload_max_filesize = 200M
 ```
 
-und änder diese entsprechend ab. In vim wird mit der Taste „i“ in den Edit-Modus gewechselt. Nach erfolgreicher Editierung, kann mit der Taste „ESC“ das Editieren beendet und mit „:wq“ die Änderungen gespeichert und das Dokument verlassen werden.
-
 ### Optional: Installation with secured SSL/TLS certificate
 
-Für eine sichere Installation über ein SSL/TLS-Zertifikat verwenden wir "certbot" von LetsEncrypt. Wenn der Server nicht öffentlich über DNS aufgelöst werden kann, sollte dieser Schritt übersprungen werden. In diesem Fall können Sie PKI verwenden oder manuell ein Zertifikat mit Openssl erzeugen und es in der Virtual Host-Datei und im Client speichern.
+Für eine sichere Installation über ein SSL/TLS-Zertifikat verwenden wir "certbot" von LetsEncrypt. Wenn der Server nicht öffentlich über DNS aufgelöst werden kann, sollte dieser Schritt übersprungen werden. In diesem Fall können Sie eine PKI verwenden oder manuell ein Zertifikat mit Openssl erzeugen und es in der Virtual Host-Datei und im Client speichern.
 
 #### Let's Encrypt
 
 ```bash
-sudo apt install certbot python-certbot-apache
+sudo dnf install certbot python-certbot-apache
 ```
 
-Nach erfolgreicher installation, und Erstellung des „Virtual Host“ aus dem vorherigen Schritt, können wir ein Zertifikat generieren.
+Nach erfolgreicher Installation und der Erstellung des "virtuellen Hosts" aus dem vorherigen Schritt können wir ein Zertifikat erstellen.
 
 ```bash
 certbot certonly --apache -d monarc.domain.de
 ```
 
-Ist das Zertifikat erfolgreich generiert worden, können die auskommentierten Teile aus der „Virtual Host“ Konfiguration eingeschaltet werden.
+Wenn das Zertifikat erfolgreich generiert wurde, können die kommentierten Teile der "Virtual Host"-Konfiguration eingeschaltet werden. Denken Sie daran, die folgenden Pfade in der Datei anzupassen.
 
 ```bash
 SSLCertificateFile    /etc/letsencrypt/live/monarc.domain.de/cert.pem
@@ -241,7 +244,7 @@ SSLCertificateKeyFile /etc/letsencrypt/live/monarc.domain.de/privkey.pem
 SSLCertificateChainFile /etc/letsencrypt/live/monarc.domain.de/chain.pem
 ```
 
-#### Self signed certificate
+#### Selbst signierte Zertifikate
 
 Mit dem folgenden Befehl können Sie ein SSL-Zertifikat erzeugen.
 
@@ -260,7 +263,7 @@ Beschreibung:
   -out certificate.pem #Ausgabe Pfad und Name der Zertifikatsdatei
 ```
 
-Danach können wir das generierte Zertifikat überprüfen
+after this we can check the generated certificate
 
 ```bash
 openssl x509 -text -noout -in certificate.pem
@@ -379,11 +382,12 @@ Dadurch wird die Datenbankverbindung hergestellt.
 
 :bulb: Da mit der Version 2.9.17 ein Erweiterungsmodul zur Generierung von Statistiken aus erstellten Risikoanalysen veröffentlicht wurde, sind seither weitere Anpassungen an der local.php vorzunehmen, wenn diese Funktion genutzt werden soll. Weitere Informationen finden Sie in diesem Fall unter folgendem Link: https://www.monarc.lu/documentation/stats-service/master/installation.html
 
-Da MONARC "nodejs 14" benötigt und diese Version derzeit nicht Teil des Ubuntu-Repositorys ist, muss sie nun manuell installiert werden. Nach der Installation sind alle Abhängigkeiten erfüllt, um auch "grunt-cli" zu installieren.
+Da MONARC "nodejs 14" benötigt. Nach der Installation sind alle Abhängigkeiten erfüllt, um auch "grunt-cli" zu installieren.
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
-sudo apt-get install nodejs
+sudo dnf module list nodejs
+sudo dnf module enable nodejs:14
+sudo dnf install nodejs
 sudo npm install -g grunt-cli
 ```
 
@@ -417,7 +421,7 @@ Wenn Sie monarc aktualisieren möchten, sollten Sie zunächst sicherstellen, das
 
 ```bash
 cd /var/lib/monarc/fo/
-sudo apt update && sudo apt upgrade
+sudo dnf update
 composer update
 npm install -g npm
 ```

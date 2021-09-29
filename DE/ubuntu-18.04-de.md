@@ -233,7 +233,7 @@ Nach erfolgreicher installation, und Erstellung des „Virtual Host“ aus dem v
 certbot certonly --apache -d monarc.domain.de
 ```
 
-Ist das Zertifikat erfolgreich generiert worden, können die auskommentierten Teile aus der „Virtual Host“ Konfiguration eingeschaltet werden.
+Ist das Zertifikat erfolgreich generiert worden, können die auskommentierten Teile aus der „Virtual Host“ Konfiguration eingeschaltet werden. Denken Sie daran, die folgenden Pfade in der Datei anzupassen.
 
 ```bash
 SSLCertificateFile    /etc/letsencrypt/live/monarc.domain.de/cert.pem
@@ -249,7 +249,7 @@ Mit dem folgenden Befehl können Sie ein SSL-Zertifikat erzeugen.
 openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
 ```
 
-Description:
+Beschreibung:
 ```bash
   -newkey #Ein neues Schlüsselpaar soll generiert werden.
   rsa:2048 # Ein Schlüssel mit dem Algorithmus RSA und einer Schlüssellänge von 2048 Bit
