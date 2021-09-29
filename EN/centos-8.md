@@ -1,9 +1,9 @@
 
-# Installation Instructions Ubuntu 18.04
+# Installation Instructions Centos 8
 
 ## Requirements
 
-- Ubuntu 18.04 LTS server installation
+- Centos 8 server installation
 - internet access
 - Command line access (Putty/SSH/direct access)
 
@@ -14,11 +14,11 @@
 
 ### Preparation
 
-First we prepare the installed Ubuntu Server instance. First, we bring the system up to date before we start installing firewalld as the firewall management tool and vim as the editor. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
+First we prepare the installed Centos Server instance. First we bring the system up to date before we start with the installation and configuration of firewalld as firewall management tool and vim as editor. These are the easiest to use in our opinion. You can of course use other tools. Please note then in the following to adapt the appropriate lines for themselves.
 
 ```bash
-sudo apt update && apt upgrade
-sudo apt install firewalld vim
+sudo dnf update
+sudo dnf install firewalld vim epel-release
 ```
 
 After successful installation we set up firewalld for autostart and start the service.
@@ -28,7 +28,7 @@ sudo systemctl enable firewalld
 sudo systemctl start firewalld
 ```
 
-In the next step, we set up the necessary firewall policies. In our case, we access the Ubuntu server via SSH. Therefore, we will also open the ports necessary for ssh.
+In the next step, we set up the necessary firewall policies. In our case, we access the Centos server via SSH. Therefore, we will also release the necessary ports for this.
 
 ```bash
 sudo firewall-cmd --permanent --add-service=http
@@ -40,7 +40,7 @@ sudo firewall-cmd --reload
 Finally, we install some tools and dependencies, for the later MONARC installation.
 
 ```bash
-sudo apt install zip unzip git gettext curl gsfonts
+sudo dnf install zip unzip git gettext curl tar gzip wget
 ```
 
 ### Installation MariaDB database server
@@ -48,7 +48,7 @@ sudo apt install zip unzip git gettext curl gsfonts
 We start with the installation of the database server and the client software.
 
 ```bash
-sudo apt install mariadb-server mariadb-client
+sudo dnf install mariadb-server mariadb
 ```
 
 Afterwards, we also set up the autostart here and start the services initially.
@@ -96,10 +96,12 @@ This completes the installation of the database service and we can proceed with 
 
 ### Installation Apache Webserver und PHP 7.4
 
-First we install the required Apache and PHP 7.4 packages.
+First, we install the required Apache with the required PHP 7.4 packages. Since PHP 7.4 is not included by default in Centos, we obtain it from the REMI repository
 
 ```bash
-sudo apt install php7.4 php7.4-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
+sudo dnf install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+sudo dnf module enable php:remi-7.4
+sudo dnf install httpd php php-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath}
 ```
 
 In order to get access to the MONARC environment later, a "Virtual Host" must be set up at Apache. In the configuration provided here some parts are commented out. This version allows to get unencrypted access to the installed MONARC instance. However, it is highly recommended to secure the connection using SSL/TLS certificate. The configuration file is already prepared for this purpose.
@@ -107,7 +109,9 @@ In order to get access to the MONARC environment later, a "Virtual Host" must be
 To create a "Virtual Host" we change to the Apache configuration directory
 
 ```bash
-cd /etc/apache2/sites-available/
+sudo mkdir /etc/httpd/sites-available
+sudo mkdir /etc/httpd/sites-enabled
+cd /etc/httpd/sites-available/
 ```
 
 Here we now create a new file and name it according to the domain under which the installation will be operating.
@@ -145,7 +149,7 @@ DocumentRoot "/var/lib/monarc/fo/public"
 # SSL configuration, you may want to take the easy route instead and use Lets Encrypt!
 #SSLEngine on
 #Include /etc/letsencrypt/options-ssl-apache.conf
-#SSLProtocol -all + TLSv1.3 +TLSv1.2 +TLSv1.1
+#SSLProtocol -all +TLSv1.3 +TLSv1.2 +TLSv1.1
 #SSLHonorCipherOrder on
 
 # Encoded slashes need to be allowed
@@ -157,24 +161,26 @@ AllowEncodedSlashes             NoDecode
 </VirtualHost>
 ```
 
-Finally, we activate the required modules and install the missing PHP dependencies:
+Finally, we add our configuration folder to Apache's settings:
 
 ```bash
-sudo apt-get install apache2
-sudo a2dismod status
-sudo a2enmod ssl
-sudo a2enmod rewrite
-sudo a2enmod headers
+sudo vim /etc/httpd/conf/httpd.conf
+```
+
+In dieser Datei ergänzen wir am Ende die folgende Zeile
+
+```bash
+IncludeOptional sites-enabled/*.conf
 ```
 
 To activate our changes to the virtual host, we now need to create a symbolic link.
 
 ```bash
-cd /etc/apache2/sites-enabled/
+cd /etc/httpd/sites-enabled/
 ln -s ../sites-available/monarc.domain.de.conf monarc.domain.de.conf
 ```
 
-To check whether our configuration is error-free, we can now perform this check.
+To check if the configuration works properly, it is possible to check it for syntax errors beforehand
 
 ```bash
 sudo apachectl -S
@@ -185,7 +191,8 @@ Our created file should be listed in the output. In addition, no errors should b
 With this we can set up the autostart for Apache and start the service.
 
 ```bash
-sudo systemctl enable apache2
+sudo systemctl enable httpd
+sudo systemctl start httpd
 ```
 
 ### PHP settings
@@ -193,21 +200,21 @@ sudo systemctl enable apache2
 Since MONARC can still have problems with the standard timeouts of PHP at the current time for larger risk management structures, we recommend to adjusted the following parameter in php.ini:
 
 ```bash
-vim /etc/php/7.4/apache2/php.ini
+sudo vim /etc/php.ini
 ```
 ```bash
 ...
-max_execution_time = 0
+max_execution_time = 0 #Attention, this setting disables the timeout for PHP, if other applications are used on the server, it should be checked if this setting can be used.
 ...
-max_input_time = 0
+max_input_time = 0 #Attention, this setting disables the timeout for PHP, if other applications are used on the server, it should be checked if this setting can be used.
 ...
 memory_limit = 2048M
 ...
 ```
-In order to avoid problems with possible uplouds into the MONARC environment later on, we set the uploud limit higher in /etc/php/7.4/apache2/php.ini
+In order to avoid problems with possible uplouds into the MONARC environment later on, we set the uploud limit higher in `/etc/php.ini`
 
 ```bash
-sudo vim /etc/php/7.4/apache2/php.ini
+sudo vim /etc/php.ini
 ```
 ```bash
 upload_max_filesize = 200M
@@ -220,7 +227,7 @@ For a secured installation via SSL/TLS certificate we use "certbot" provided by 
 #### Let's Encrypt
 
 ```bash
-sudo apt install certbot python-certbot-apache
+sudo dnf install certbot python-certbot-apache
 ```
 
 After successful installation, and creation of the "Virtual Host" from the previous step, we can generate a certificate.
@@ -378,8 +385,9 @@ This establishes the database connection.
 Since MONARC requires "nodejs 14" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
-sudo apt-get install nodejs
+sudo dnf module list nodejs
+sudo dnf module enable nodejs:14
+sudo dnf install nodejs
 sudo npm install -g grunt-cli
 ```
 
@@ -413,7 +421,7 @@ If you want to update monarc, you should first make sure that your system is up 
 
 ```bash
 cd /var/lib/monarc/fo/
-sudo apt update && sudo apt upgrade
+sudo dnf update
 composer update
 npm install -g npm
 ```
