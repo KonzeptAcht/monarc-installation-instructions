@@ -1,9 +1,9 @@
 
-# Installation Instructions Ubuntu 20.04
+# Installation Instructions Ubuntu 18.04
 
 ## Requirements
 
-- Ubuntu 20.04 LTS server installation
+- Ubuntu 18.04 LTS server installation
 - internet access
 - Command line access (Putty/SSH/direct access)
 
@@ -99,7 +99,8 @@ This completes the installation of the database service and we can proceed with 
 First we install the required Apache and PHP 7.4 packages.
 
 ```bash
-sudo apt install php php-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php```
+sudo apt install apache2 php7.4 php7.4-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
+```
 
 In order to get access to the MONARC environment later, a "Virtual Host" must be set up at Apache. In the configuration provided here some parts are commented out. This version allows to get unencrypted access to the installed MONARC instance. However, it is highly recommended to secure the connection using SSL/TLS certificate. The configuration file is already prepared for this purpose.
 
@@ -159,7 +160,6 @@ AllowEncodedSlashes             NoDecode
 Finally, we activate the required modules and install the missing PHP dependencies:
 
 ```bash
-sudo apt-get install apache2
 sudo a2dismod status
 sudo a2enmod ssl
 sudo a2enmod rewrite
