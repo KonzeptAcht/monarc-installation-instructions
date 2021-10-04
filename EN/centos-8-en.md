@@ -333,6 +333,7 @@ mkdir -p module/Monarc
 cd module/Monarc
 ln -s ./../../vendor/monarc/core Core
 ln -s ./../../vendor/monarc/frontoffice FrontOffice
+cd ../..
 mkdir node_modules
 cd node_modules
 git clone https://github.com/monarc-project/ng-client.git ng_client
