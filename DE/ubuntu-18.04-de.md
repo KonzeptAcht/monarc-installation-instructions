@@ -97,10 +97,17 @@ Damit ist die Installation des Datenbankdienstes abgeschlossen und wir können m
 
 ### Installation Apache Webserver und PHP 7.4
 
-Zuerst installieren wir die erforderlichen Apache- und PHP 7.4-Pakete.
+Zuerst installieren wir die erforderlichen Apache- und PHP 7.4-Pakete. Da php in der Version 7.4 nicht Teil der Standard Repositories ist, müssen wir diese extern beziehen.
 
 ```bash
-sudo apt install apache2 php7.4 php7.4-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get update
+```
+
+Anschließend stehen die Pakete zu Verfügung und wir können diese installieren.
+
+```bash
+sudo apt install apache2 php7.4 php7.4-{curl,gd,mysql,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
 ```
 
 Um später Zugriff auf die MONARC Umgebung zu erhalten, bei Apache ein sogenannter „Virtual Host“ einzurichten. In der hier zur verfügung gestellten Konfiguration sind einige teile auskommentiert. Diese Fassung ermöglicht es unverschlüsselten Zugriff auf die installierte MONARC Instanz zu erhalten. Es ist jedoch sehr zu empfehlen, die Verbindung mittels SSL/TLS Zertifikat abzusichern. Hierfür ist die Konfigurationsdatei bereits vorbereitet.

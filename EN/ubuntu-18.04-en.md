@@ -96,7 +96,14 @@ This completes the installation of the database service and we can proceed with 
 
 ### Installation Apache Webserver und PHP 7.4
 
-First we install the required Apache and PHP 7.4 packages.
+First we install the required Apache and PHP 7.4 packages. Since php in version 7.4 is not part of the standard repositories, we have to pull it externally.
+
+```bash
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get update
+```
+
+After that, the packages are available and we can install them.
 
 ```bash
 sudo apt install apache2 php7.4 php7.4-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
