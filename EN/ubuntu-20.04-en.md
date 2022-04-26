@@ -375,10 +375,10 @@ This establishes the database connection.
 
 :bulb: Since with the version 2.9.17 an extension module for the generation of statistics from created risk analyses was published, since then further adjustments are to be made to the local.php, if this function will be used. In this case, further information can be found at the following link: https://www.monarc.lu/documentation/stats-service/master/installation.html
 
-Since MONARC requires "nodejs 14" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
+Since MONARC requires "nodejs 16" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
 sudo apt-get install nodejs
 sudo npm install -g grunt-cli
 ```
