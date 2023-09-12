@@ -14,27 +14,19 @@
 
 ### Preparation
 
-First we prepare the installed Ubuntu Server instance. First, we bring the system up to date before we start installing firewalld as the firewall management tool and vim as the editor. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
+First we prepare the installed Ubuntu Server instance. First, we bring the system up to date before we start installing all required packages
 
 ```bash
 sudo apt update && apt upgrade
-sudo apt install firewalld vim
 ```
 
-After successful installation we set up firewalld for autostart and start the service.
+In the next step, we set up the necessary firewall policies and enable it. In our case, we access the Ubuntu server via SSH. Therefore, we will also open the ports necessary for ssh.
 
 ```bash
-sudo systemctl enable firewalld
-sudo systemctl start firewalld
-```
-
-In the next step, we set up the necessary firewall policies. In our case, we access the Ubuntu server via SSH. Therefore, we will also open the ports necessary for ssh.
-
-```bash
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --permanent --add-service=ssh
-sudo firewall-cmd --reload
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw allow ssh
+sudo ufw enable
 ```
 
 Finally, we install some tools and dependencies, for the later MONARC installation.
@@ -94,9 +86,9 @@ EXIT;
 
 This completes the installation of the database service and we can proceed with the Apache web server.
 
-### Installation Apache Webserver und PHP 7.4
+### Installation Apache Webserver und PHP
 
-First we install the required Apache and PHP 7.4 packages.
+First we install the required Apache and PHP 8.0/8.1 packages.
 
 ```bash
 sudo apt install apache2 php php-{curl,gd,mysql,pear,apcu,xml,mbstring,intl,imagick,zip,bcmath} libapache2-mod-php
@@ -192,7 +184,7 @@ sudo systemctl enable apache2
 Since MONARC can still have problems with the standard timeouts of PHP at the current time for larger risk management structures, we recommend to adjusted the following parameter in php.ini:
 
 ```bash
-vim /etc/php/7.4/apache2/php.ini
+vim /etc/php/8.1/apache2/php.ini
 ```
 ```bash
 ...
@@ -206,7 +198,7 @@ memory_limit = 2048M
 In order to avoid problems with possible uplouds into the MONARC environment later on, we set the uploud limit higher in /etc/php/7.4/apache2/php.ini
 
 ```bash
-sudo vim /etc/php/7.4/apache2/php.ini
+sudo vim /etc/php/8.1/apache2/php.ini
 ```
 ```bash
 upload_max_filesize = 200M
@@ -375,10 +367,10 @@ This establishes the database connection.
 
 :bulb: Since with the version 2.9.17 an extension module for the generation of statistics from created risk analyses was published, since then further adjustments are to be made to the local.php, if this function will be used. In this case, further information can be found at the following link: https://www.monarc.lu/documentation/stats-service/master/installation.html
 
-Since MONARC requires "nodejs 14" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
+Since MONARC requires "nodejs 16" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
 
 ```bash
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
 sudo apt-get install nodejs
 sudo npm install -g grunt-cli
 ```
@@ -386,7 +378,7 @@ sudo npm install -g grunt-cli
 Finally, we run the update script that makes the prepared MONARC instance operational.
 
 ```bash
-./scripts/update-all.sh -c
+./scripts/update-all.sh
 ```
 
 To prevent permission problems, we set the appropriate permissions for the Apache user once again.
@@ -421,7 +413,7 @@ npm install -g npm
 Then we can update the system with the prepared script
 
 ```bash
-./scripts/update-all.sh -c
+./scripts/update-all.sh
 ```
 
 Finally, we delete the data present in the cache.
