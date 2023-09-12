@@ -3,7 +3,7 @@
 
 ## Requirements
 
-- Ubuntu 20.04 LTS server installation
+- Ubuntu 22.04 LTS server installation
 - internet access
 - Command line access (Putty/SSH/direct access)
 
@@ -14,33 +14,34 @@
 
 ### Preparation
 
-First we prepare the installed Ubuntu Server instance. First, we bring the system up to date before we start installing firewalld as the firewall management tool and vim as the editor. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
+First we prepare the installed Ubuntu Server instance. We bring the system up to date before we start installing vim as the editor and configure ufw as firewall. These are the easiest to use in our opinion, but you can of course use other tools like ufw or nano. Please note in the following, the appropriate lines for you to adapt.
 
 ```bash
 sudo apt update && apt upgrade
-sudo apt install firewalld vim
+sudo apt install ufw vim
 ```
 
 After successful installation we set up firewalld for autostart and start the service.
 
 ```bash
-sudo systemctl enable firewalld
-sudo systemctl start firewalld
+sudo systemctl enable ufw
+sudo systemctl start ufw
 ```
 
 In the next step, we set up the necessary firewall policies. In our case, we access the Ubuntu server via SSH. Therefore, we will also open the ports necessary for ssh.
 
 ```bash
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --permanent --add-service=ssh
-sudo firewall-cmd --reload
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw allow ssh
+sudo ufw enable
+sudo ufw reload
 ```
 
 Finally, we install some tools and dependencies, for the later MONARC installation.
 
 ```bash
-sudo apt install zip unzip git gettext curl gsfonts
+sudo apt install zip unzip git gettext curl jq
 ```
 
 ### Installation MariaDB database server
@@ -68,17 +69,40 @@ The following information should be provided here:
 
 ```bash
 Enter current password for root (enter for none): [ENTER]
-...
-Set root password? [Y/n] Y
-New password:
-Re-enter new password:
-...
+OK, successfully used password, moving on...
+
+Switch to unix_socket authentication [Y/n] Y
+Enabled successfully!
+Reloading privilege tables..
+ ... Success!
+
+Change the root password? [Y/n] Y
+New password: 
+Re-enter new password: 
+Password updated successfully!
+Reloading privilege tables..
+ ... Success!
+
 Remove anonymous users? [Y/n] Y
-...
+ ... Success!
+
 Disallow root login remotely? [Y/n] Y
-...
+ ... Success!
+
 Remove test database and access to it? [Y/n] Y
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+
+Reload privilege tables now? [Y/n] Y
+ ... Success!
+
+Cleaning up...
+
+Thanks for using MariaDB!
 ```
+
 After successful installation, we prepare the database for MONARC installation. To do this, we first log in to the database service with the "root" user's credentials and then create the MONARC database user and databases.
 
 ```bash
@@ -189,27 +213,25 @@ sudo systemctl enable apache2
 
 ### PHP settings
 
-Since MONARC can still have problems with the standard timeouts of PHP at the current time for larger risk management structures, we recommend to adjusted the following parameter in php.ini:
+Since MONARC can still have problems with the standard timeouts of PHP at the current time for larger risk management structures, we recommend to adjusted the following parameter in php.ini. Adjust the "x" in the path name according to the PHP version you are using.
+
+:warning: Attention
+use these adjustments only in productive environments, if this is necessary.
 
 ```bash
-vim /etc/php/7.4/apache2/php.ini
+vim /etc/php/8.x/apache2/php.ini
 ```
 ```bash
 ...
-max_execution_time = 0
+max_execution_time = 100
 ...
-max_input_time = 0
+max_input_time = 223
 ...
-memory_limit = 2048M
+memory_limit = 512M
 ...
-```
-In order to avoid problems with possible uplouds into the MONARC environment later on, we set the uploud limit higher in /etc/php/7.4/apache2/php.ini
-
-```bash
-sudo vim /etc/php/7.4/apache2/php.ini
-```
-```bash
 upload_max_filesize = 200M
+...
+post_max_size=50M
 ```
 
 ### Optional: Installation with secured SSL/TLS certificate
@@ -219,7 +241,7 @@ For a secured installation via SSL/TLS certificate we use "certbot" provided by 
 #### Let's Encrypt
 
 ```bash
-sudo apt install certbot python-certbot-apache
+sudo apt install certbot python3-certbot-apache
 ```
 
 After successful installation, and creation of the "Virtual Host" from the previous step, we can generate a certificate.
@@ -268,69 +290,33 @@ SSLCertificateFile    /etc/letsencrypt/live/monarc.domain.de/cert.pem
 SSLCertificateKeyFile /etc/letsencrypt/live/monarc.domain.de/privkey.pem
 ```
 
-### Installation Composer
-
-Another dependency of this product is the composer. It is essential for the setup and later update of the product. Since the installation cannot be done via the official repositories, as version >= 2.1.0 is required, it is explained again here.
-
-With the following command you can download the installation script.
-
-```bash
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-```
-
-Afterwards, the signature should be verified to make sure that the script is not corrupted.
-
-```bash
-HASH="$(wget -q -O - https://composer.github.io/installer.sig)"
-php -r "if (hash_file('SHA384', 'composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-```
-
-If the hash values match, the following message should be output.
-`Installer verified`
-
-This prepares the installation and we can start the script as follows:
-```bash
-sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-```
-
-The following command can be executed to verify the version status. At least version >=2.1.0 should be installed.
-
-```bash
-composer -V
-```
-
 ### MONARC Installation
 
-We start by creating the installation directory for MONARC, downloading the installation files from Git, and making some folder adjustments.
+We start by creating the installation variables.
 
 ```bash
-mkdir -p /var/lib/monarc/fo
-git clone https://github.com/monarc-project/MonarcAppFO.git /var/lib/monarc/fo
-cd /var/lib/monarc/fo
-mkdir -p data/cache
-mkdir -p data/LazyServices/Proxy
-chmod -R g+w data
+PATH_TO_MONARC='/var/lib/monarc/fo'
+PATH_TO_MONARC_DATA='/var/lib/monarc/fo-data'
+MONARC_VERSION=$(curl --silent -H 'Content-Type: application/json' https://api.github.com/repos/monarc-project/MonarcAppFO/releases/latest | jq  -r '.tag_name')
+MONARCFO_RELEASE_URL="https://github.com/monarc-project/MonarcAppFO/releases/download/$MONARC_VERSION/MonarcAppFO-$MONARC_VERSION.tar.gz"
 ```
 
-With the following command we install all open dependencies.
+Afterwards, we create our folder structure and download the newest monarc version.
 
 ```bash
-composer install -o
-```
-
-Afterwards, some customizations and shortcuts have to be created for the framework used by MONARC.
-
-```bash
-mkdir -p module/Monarc
-cd module/Monarc
-ln -s ./../../vendor/monarc/core Core
-ln -s ./../../vendor/monarc/frontoffice FrontOffice
-cd ../..
-mkdir node_modules
-cd node_modules
-git clone https://github.com/monarc-project/ng-client.git ng_client
-git clone https://github.com/monarc-project/ng-anr.git ng_anr
-cd ..
+mkdir -p /var/lib/monarc/releases/
+# Download release
+curl -sL $MONARCFO_RELEASE_URL -o /var/lib/monarc/releases/`basename $MONARCFO_RELEASE_URL`
+# Create release directory
+mkdir /var/lib/monarc/releases/`basename $MONARCFO_RELEASE_URL | sed 's/.tar.gz//'`
+# Unarchive release
+tar -xzf /var/lib/monarc/releases/`basename $MONARCFO_RELEASE_URL` -C /var/lib/monarc/releases/`basename $MONARCFO_RELEASE_URL | sed 's/.tar.gz//'`
+# Create release symlink
+ln -s /var/lib/monarc/releases/`basename $MONARCFO_RELEASE_URL | sed 's/.tar.gz//'` $PATH_TO_MONARC
+# Create data and caches directories
+mkdir -p $PATH_TO_MONARC_DATA/cache $PATH_TO_MONARC_DATA/DoctrineORMModule/Proxy $PATH_TO_MONARC_DATA/LazyServices/Proxy $PATH_TO_MONARC_DATA/import/files
+# Create data directory symlink
+ln -s $PATH_TO_MONARC_DATA $PATH_TO_MONARC/data
 ```
 
 Now that we have all the files from MONARC, we can initialize the database with the required schema and corresponding information.
@@ -373,26 +359,11 @@ return array(
 
 This establishes the database connection.
 
-:bulb: Since with the version 2.9.17 an extension module for the generation of statistics from created risk analyses was published, since then further adjustments are to be made to the local.php, if this function will be used. In this case, further information can be found at the following link: https://www.monarc.lu/documentation/stats-service/master/installation.html
-
-Since MONARC requires "nodejs 14" and this version is currently not part of the Ubuntu repository, it must now be installed manually. After the installation all dependencies are fulfilled to install "grunt-cli" as well.
-
-```bash
-curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
-sudo apt-get install nodejs
-sudo npm install -g grunt-cli
-```
-
-Finally, we run the update script that makes the prepared MONARC instance operational.
-
-```bash
-./scripts/update-all.sh -c
-```
-
 To prevent permission problems, we set the appropriate permissions for the Apache user once again.
 
 ```bash
-sudo chown -R www-data:www-data /var/lib/monarc/fo/public
+sudo chown -R www-data:www-data /var/lib/monarc/fo/public/
+sudo chown -R www-data:www-data /var/lib/monarc/fo-data/
 ```
 
 MONARC is now ready for operation and can be accessed via the configured domain. To be able to log in to the web interface, only an administrator has to be created.
@@ -405,31 +376,6 @@ The login data created are as follows:
 ```bash
 User: admin@admin.localhost
 Password: admin
-```
-
-## MONARC Update
-
-If you want to update monarc, you should first make sure that your system is up to date.
-
-```bash
-cd /var/lib/monarc/fo/
-sudo apt update && sudo apt upgrade
-composer update
-npm install -g npm
-```
-
-Then we can update the system with the prepared script
-
-```bash
-./scripts/update-all.sh -c
-```
-
-Finally, we delete the data present in the cache.
-
-```bash
-rm -rf data/cache/*
-rm -rf data/DoctrineORMModule/Proxy/*
-rm -rf data/LazyServices/Proxy/*
 ```
 
 ## Problems?
